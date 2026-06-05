@@ -2,16 +2,20 @@ import "dotenv/config";
 import { connectDB } from "./utils/dbconfig";
 import express from "express";
 import { Request, Response } from "express"
-import { UserModel } from "./db";
+import { UserModel, ContentModel } from "./db";
 import { signinValidation, userValidation } from "./utils/validation";
 import { HashedPassword, VerifyPassword } from "./utils/hash";
 import { Success, Client, Server } from "./utils/status";
 import { signtoken } from "./utils/jwt";
-
+import { middleware } from "./utils/middleware";
 connectDB();
 
 const app = express();
 app.use(express.json());
+
+interface UserRequest extends Request {
+    userId?: string
+}
 
 app.post("/api/v1/signup", async (req: Request, res: Response) => {
     try {
@@ -47,11 +51,10 @@ app.post("/api/v1/signup", async (req: Request, res: Response) => {
     } catch (err: unknown) {
         console.log(err)
         res.status(Server.Internal_Server).json({
-            message: "Internal Server Error , try again later..."
+            message: "Internal Server Error "
         });
     }
-})
-
+});
 app.post("/api/v1/signin", async (req: Request, res: Response) => {
     try {
         const parsed_data = signinValidation.safeParse(req.body);
@@ -77,17 +80,33 @@ app.post("/api/v1/signin", async (req: Request, res: Response) => {
         }
         const token = signtoken(existingUser._id.toString());
         res.json({ token: token })
+        console.log(token)
 
     } catch (err: unknown) {
         res.status(Server.Internal_Server).json({ message: "Internal Server Error" })
     }
 
 });
-app.post("/api/v1/content", (req, res) => {
-
-})
-app.put("/api/v1/content", (req, res) => {
-
-})
-
+app.post("/api/v1/content", middleware, async (req: UserRequest, res: Response) => {
+    const { link, title, tag } = req.body;
+    try {
+        if (!req.userId) {
+            res.status(Client.unathorized).json({ message: "Unauthorized" });
+            return
+        }
+        await ContentModel.create({
+            link,
+            title,
+            tag: tag ?? [],
+            userId: req.userId
+        });
+        res.status(Success.Created).json({ message: "Content Created" });
+        return
+    } catch (err: unknown) {
+        console.log(err)
+        res.status(Server.Internal_Server).json({ message: "Internal Server Error " })
+    }
+});
+app.get("/api/v1/content", (req, res) => {
+});
 app.listen(3000);
