@@ -1,5 +1,4 @@
 import "dotenv/config";
-import { connectDB } from "./utils/dbconfig";
 import express from "express";
 import { Request, Response } from "express"
 import { UserModel, ContentModel } from "./db";
@@ -8,18 +7,14 @@ import { HashedPassword, VerifyPassword } from "./utils/hash";
 import { Success, Client, Server } from "./utils/status";
 import { signtoken } from "./utils/jwt";
 import { middleware } from "./utils/middleware";
-connectDB();
+import cors from "cors";
 
 const app = express();
 app.use(express.json());
-
-interface UserRequest extends Request {
-    userId?: string
-}
+app.use(cors());
 
 app.post("/api/v1/signup", async (req: Request, res: Response) => {
     try {
-
         const parsed_data = userValidation.safeParse(req.body);
 
         if (!parsed_data.success) {
@@ -79,15 +74,14 @@ app.post("/api/v1/signin", async (req: Request, res: Response) => {
             return
         }
         const token = signtoken(existingUser._id.toString());
-        res.json({ token: token })
-        console.log(token)
+        res.json({ token })
 
     } catch (err: unknown) {
         res.status(Server.Internal_Server).json({ message: "Internal Server Error" })
     }
 
 });
-app.post("/api/v1/content", middleware, async (req: UserRequest, res: Response) => {
+app.post("/api/v1/content", middleware, async (req: Request, res: Response) => {
     const { link, title, tag } = req.body;
     try {
         if (!req.userId) {
@@ -101,12 +95,46 @@ app.post("/api/v1/content", middleware, async (req: UserRequest, res: Response) 
             userId: req.userId
         });
         res.status(Success.Created).json({ message: "Content Created" });
-        return
-    } catch (err: unknown) {
+    } catch (err) {
         console.log(err)
         res.status(Server.Internal_Server).json({ message: "Internal Server Error " })
     }
 });
-app.get("/api/v1/content", (req, res) => {
+app.get("/api/v1/content", middleware, async (req: Request, res: Response) => {
+    try {
+        const userId = req.userId;
+        if (!userId) {
+            res.status(Client.unathorized).json({ message: "Unauthorized" });
+            return
+        }
+        const content = await ContentModel.find({
+            userId: userId
+        }).populate("userId", "username");
+        res.status(Success.OK).json({ content });
+    } catch (err) {
+        console.log(err)
+        res.status(Server.Internal_Server).json({ message: "Internal Server Error" })
+    }
 });
+app.delete("/api/v1/content", middleware, async (req: Request, res: Response) => {
+    try {
+        const contentId = req.body.contentId;
+        if (!contentId) {
+            res.status(Client.bad_req).json({ message: "contentId is required" });
+            return
+        }
+        if (!req.userId) {
+            res.status(Client.unathorized).json({ message: "Unauthorized" });
+            return
+        }
+        await ContentModel.deleteMany({
+            _id: contentId,
+            userId: req.userId,
+        });
+        res.status(Success.OK).json({ message: "Deleted" });
+    } catch (err) {
+        console.log(err)
+        res.status(Server.Internal_Server).json({ message: "Internal Server Error" });
+    }
+})
 app.listen(3000);
