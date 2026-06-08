@@ -13,6 +13,9 @@ Built a personal knowledge management REST API to solidify backend fundamentals.
 
 Node.js · TypeScript · Express · MongoDB · Mongoose · JWT · express-rate-limit
 
-## Deployed on Railway
+## Deployed on Render
+https://second-brain-1-5uk3.onrender.com
+
+
 
 Frontend coming soon.....
