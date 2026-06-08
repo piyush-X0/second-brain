@@ -117,7 +117,7 @@ app.get("/api/v1/content", limiter, middleware, async (req: Request, res: Respon
         res.status(Server.Internal_Server).json({ message: "Internal Server Error" })
     }
 });
-app.delete("/api/v1/content", limiter, middleware, async (req: Request, res: Response) => {
+app.delete("/api/v1/content", middleware, async (req: Request, res: Response) => {
     try {
         const contentId = req.body.contentId;
         if (!contentId) {
@@ -138,4 +138,4 @@ app.delete("/api/v1/content", limiter, middleware, async (req: Request, res: Res
         res.status(Server.Internal_Server).json({ message: "Internal Server Error" });
     }
 });
-app.listen(3000);
+app.listen(process.env.PORT || 3000);
