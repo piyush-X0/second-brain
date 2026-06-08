@@ -7,13 +7,14 @@ import { HashedPassword, VerifyPassword } from "./utils/hash";
 import { Success, Client, Server } from "./utils/status";
 import { signtoken } from "./utils/jwt";
 import { middleware } from "./utils/middleware";
+import { limiter } from "./utils/ratelimiter";
 import cors from "cors";
 
 const app = express();
 app.use(express.json());
 app.use(cors());
 
-app.post("/api/v1/signup", async (req: Request, res: Response) => {
+app.post("/api/v1/signup", limiter, async (req: Request, res: Response) => {
     try {
         const parsed_data = userValidation.safeParse(req.body);
 
@@ -50,7 +51,7 @@ app.post("/api/v1/signup", async (req: Request, res: Response) => {
         });
     }
 });
-app.post("/api/v1/signin", async (req: Request, res: Response) => {
+app.post("/api/v1/signin", limiter, async (req: Request, res: Response) => {
     try {
         const parsed_data = signinValidation.safeParse(req.body);
 
@@ -70,7 +71,7 @@ app.post("/api/v1/signin", async (req: Request, res: Response) => {
         }
         const pass_compare = await VerifyPassword(password, existingUser.password!);
         if (!pass_compare) {
-            res.status(Client.unathorized).json({ message: "Invalid Credentials" });
+            res.status(Client.unauthorized).json({ message: "Invalid Credentials" });
             return
         }
         const token = signtoken(existingUser._id.toString());
@@ -81,11 +82,11 @@ app.post("/api/v1/signin", async (req: Request, res: Response) => {
     }
 
 });
-app.post("/api/v1/content", middleware, async (req: Request, res: Response) => {
+app.post("/api/v1/content", limiter, middleware, async (req: Request, res: Response) => {
     const { link, title, tag } = req.body;
     try {
         if (!req.userId) {
-            res.status(Client.unathorized).json({ message: "Unauthorized" });
+            res.status(Client.unauthorized).json({ message: "Unauthorized" });
             return
         }
         await ContentModel.create({
@@ -100,11 +101,11 @@ app.post("/api/v1/content", middleware, async (req: Request, res: Response) => {
         res.status(Server.Internal_Server).json({ message: "Internal Server Error " })
     }
 });
-app.get("/api/v1/content", middleware, async (req: Request, res: Response) => {
+app.get("/api/v1/content", limiter, middleware, async (req: Request, res: Response) => {
     try {
         const userId = req.userId;
         if (!userId) {
-            res.status(Client.unathorized).json({ message: "Unauthorized" });
+            res.status(Client.unauthorized).json({ message: "Unauthorized" });
             return
         }
         const content = await ContentModel.find({
@@ -116,7 +117,7 @@ app.get("/api/v1/content", middleware, async (req: Request, res: Response) => {
         res.status(Server.Internal_Server).json({ message: "Internal Server Error" })
     }
 });
-app.delete("/api/v1/content", middleware, async (req: Request, res: Response) => {
+app.delete("/api/v1/content", limiter, middleware, async (req: Request, res: Response) => {
     try {
         const contentId = req.body.contentId;
         if (!contentId) {
@@ -124,7 +125,7 @@ app.delete("/api/v1/content", middleware, async (req: Request, res: Response) =>
             return
         }
         if (!req.userId) {
-            res.status(Client.unathorized).json({ message: "Unauthorized" });
+            res.status(Client.unauthorized).json({ message: "Unauthorized" });
             return
         }
         await ContentModel.deleteMany({
@@ -136,5 +137,5 @@ app.delete("/api/v1/content", middleware, async (req: Request, res: Response) =>
         console.log(err)
         res.status(Server.Internal_Server).json({ message: "Internal Server Error" });
     }
-})
+});
 app.listen(3000);

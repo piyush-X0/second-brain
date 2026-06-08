@@ -7,7 +7,7 @@ export enum Success {
 }
 export enum Client {
     bad_req = 400,
-    unathorized = 401,
+    unauthorized = 401,
     Forbidden = 403,
     Not_found = 404,
     Conflict = 409

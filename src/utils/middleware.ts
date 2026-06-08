@@ -10,12 +10,10 @@ interface UserRequest extends Request {
 export const middleware = (req: UserRequest, res: Response, next: NextFunction) => {
     try {
         const token = req.headers["authorization"];
-        console.log(req.headers)
         if (!token) {
-            res.status(Client.unathorized).json({ message: "No token provided" });
+            res.status(Client.unauthorized).json({ message: "No token provided" });
             return
         }
-        console.log(token)
         const decoded = jwt.verify(token as string, JWT_SECRET);
         if (typeof decoded === "string" || !decoded?.id) {
             res.status(Client.Forbidden).json({ message: "You are not logged in" });
@@ -25,6 +23,6 @@ export const middleware = (req: UserRequest, res: Response, next: NextFunction) 
         next();
     } catch (err) {
         console.log("Middleware Error:", err);
-        res.status(Client.unathorized).json({ message: "Invalid or expired token" })
+        res.status(Client.unauthorized).json({ message: "Invalid or expired token" })
     }
 }

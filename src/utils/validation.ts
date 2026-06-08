@@ -7,7 +7,7 @@ export const userValidation = z.object({
 });
 
 export const signinValidation = z.object({
-    email: z.string().email().min(3).max(20),
+    email: z.string().email().min(4).max(30),
     password: z.string().min(8).max(30)
 })
 
