@@ -6,7 +6,7 @@ Built a personal knowledge management REST API to solidify backend fundamentals.
 
 - User auth (signup / signin) with JWT
 - CRUD for content
-- Tag system with auto findOrCreate logic
+- Tag system with auto findOrCreate logic---✗ 
 - Rate limiting with per-route independent counters
 
 ## Stack
